@@ -1,0 +1,105 @@
+FUNCTION_BLOCK AsignacionRecursos
+
+VAR_INPUT
+    Precipitacion : REAL; RANGE := (0 .. 400);
+    Temperatura : REAL; RANGE := (0 .. 35);
+    DemandaAgua : REAL; RANGE := (0 .. 17);
+    NivelReservas : REAL; RANGE := (0 .. 100);
+END_VAR
+
+VAR_OUTPUT
+    Asignacion : REAL; RANGE := (0 .. 100);
+    Costo : REAL; RANGE := (0 .. 1000);
+END_VAR
+
+FUZZIFY Precipitacion
+    TERM MuyBaja := (0, 0) (0, 1) (50, 1) (100, 0);
+    TERM Baja := (50, 0) (100, 1) (150, 0);
+    TERM Moderada := (150, 0) (250, 1) (300, 0);
+    TERM MuyAlta := (250, 0) (300, 1) (400, 1);
+END_FUZZIFY
+
+FUZZIFY Temperatura
+    TERM MuyFria := (0, 0) (0, 1) (5, 1) (10, 0);
+    TERM Fria := (5, 0) (10, 1) (15, 0);
+    TERM Moderada := (15, 0) (20, 1) (25, 0);
+    TERM Caliente := (25, 0) (30, 1) (35, 1);
+END_FUZZIFY
+
+FUZZIFY DemandaAgua
+    TERM MuyBaja := (0, 0) (0, 1) (3, 1) (6, 0);
+    TERM Baja := (3, 0) (6, 1) (8, 0);
+    TERM Moderada := (8, 0) (11, 1) (13, 0);
+    TERM MuyAlta := (13, 0) (15, 1) (17, 1);
+END_FUZZIFY
+
+FUZZIFY NivelReservas
+    TERM MuyBajo := (0, 0) (0, 1) (10, 1) (25, 0);
+    TERM Bajo := (10, 0) (25, 1) (40, 0);
+    TERM Medio := (40, 0) (50, 1) (60, 0);
+    TERM MuyAlto := (60, 0) (70, 1) (100, 1);
+END_FUZZIFY
+
+DEFUZZIFY Asignacion
+    TERM MuyBajo := (0, 0) (0, 1) (10, 1) (25, 0);
+    TERM Bajo := (10, 0) (25, 1) (40, 0);
+    TERM Medio := (40, 0) (50, 1) (60, 0);
+    TERM MuyAlto := (60, 0) (70, 1) (100, 1);
+    METHOD : COG;
+END_DEFUZZIFY
+
+DEFUZZIFY Costo
+    TERM MuyBajo := (0, 0) (0, 1) (100, 1) (200, 0);
+    TERM Bajo := (150, 0) (200, 1) (350, 0);
+    TERM Moderado := (350, 0) (500, 1) (800, 0);
+    TERM MuyAlto := (600, 0) (800, 1) (1000, 1);
+    METHOD : COG;
+END_DEFUZZIFY
+
+
+RULEBLOCK CostoEnergetico
+    AND : MIN;
+    OR : MAX;
+
+    // Reglas para el costo energético
+    RULE 1 : IF DemandaAgua IS MuyAlta AND NivelReservas IS Bajo THEN Costo IS MuyAlto;
+    RULE 2 : IF Precipitacion IS MuyAlta AND NivelReservas IS MuyAlto THEN Costo IS MuyBajo;
+    RULE 3 : IF Temperatura IS Caliente AND DemandaAgua IS MuyAlta THEN Costo IS MuyAlto;
+    RULE 4 : IF DemandaAgua IS Moderada AND NivelReservas IS Medio THEN Costo IS Moderado;
+    RULE 5 : IF Temperatura IS Moderada AND DemandaAgua IS Baja THEN Costo IS Bajo;
+    RULE 6 : IF DemandaAgua IS Baja AND NivelReservas IS MuyAlto THEN Costo IS Bajo;
+    RULE 7 : IF DemandaAgua IS MuyAlta AND NivelReservas IS MuyAlto THEN Costo IS Moderado;
+    RULE 8 : IF Precipitacion IS Baja AND NivelReservas IS Bajo THEN Costo IS MuyAlto;
+    RULE 9 : IF Temperatura IS Fria AND DemandaAgua IS Baja THEN Costo IS MuyBajo;
+    RULE 10 : IF Temperatura IS Caliente AND NivelReservas IS Bajo THEN Costo IS MuyAlto;
+    RULE 11 : IF DemandaAgua IS MuyAlta OR NivelReservas IS MuyBajo THEN Costo IS MuyAlto;
+    RULE 12 : IF Precipitacion IS Baja OR Temperatura IS Caliente THEN Costo IS MuyAlto;
+    RULE 13 : IF Temperatura IS Moderada OR DemandaAgua IS Moderada THEN Costo IS Moderado;
+    RULE 14 : IF DemandaAgua IS Baja OR NivelReservas IS MuyAlto THEN Costo IS Bajo;
+    RULE 15 : IF Temperatura IS Caliente OR DemandaAgua IS MuyAlta THEN Costo IS MuyAlto;
+END_RULEBLOCK
+
+RULEBLOCK AsignacionRecursos
+    AND : MIN;
+    OR : MAX;
+
+    // Reglas para la asignación de recursos hídricos
+    RULE 1 : IF Precipitacion IS Baja AND NivelReservas IS Bajo THEN Asignacion IS MuyBajo;
+    RULE 2 : IF Temperatura IS Caliente AND DemandaAgua IS MuyAlta THEN Asignacion IS Bajo;
+    RULE 3 : IF Precipitacion IS MuyAlta AND NivelReservas IS MuyAlto THEN Asignacion IS MuyAlto;
+    RULE 4 : IF DemandaAgua IS Baja AND NivelReservas IS MuyAlto THEN Asignacion IS Medio;
+    RULE 5 : IF Temperatura IS Moderada AND NivelReservas IS Medio THEN Asignacion IS Medio;
+    RULE 6 : IF Precipitacion IS Moderada AND NivelReservas IS Medio THEN Asignacion IS Medio;
+    RULE 7 : IF DemandaAgua IS Moderada AND NivelReservas IS Medio THEN Asignacion IS Medio;
+    RULE 8 : IF Precipitacion IS MuyAlta AND NivelReservas IS Bajo THEN Asignacion IS Bajo;
+    RULE 9 : IF DemandaAgua IS MuyAlta AND NivelReservas IS MuyAlto THEN Asignacion IS MuyAlto;
+    RULE 10 : IF Temperatura IS Fria AND NivelReservas IS MuyAlto THEN Asignacion IS MuyAlto;
+    RULE 11 : IF Precipitacion IS Baja OR NivelReservas IS Bajo THEN Asignacion IS MuyBajo;
+    RULE 12 : IF Temperatura IS Caliente OR DemandaAgua IS MuyAlta THEN Asignacion IS Bajo;
+    RULE 13 : IF Precipitacion IS Moderada OR NivelReservas IS Medio THEN Asignacion IS Medio;
+    RULE 14 : IF DemandaAgua IS Baja OR NivelReservas IS MuyAlto THEN Asignacion IS MuyAlto;
+    RULE 15 : IF Precipitacion IS MuyAlta OR Temperatura IS Moderada THEN Asignacion IS MuyAlto;
+END_RULEBLOCK
+
+
+END_FUNCTION_BLOCK
